@@ -9,18 +9,31 @@ use Illuminate\Support\Facades\Auth;
 
 class TransactionController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $transactions = Transaction::where('user_id', Auth::id())
-                                   ->with('category')
-                                   ->latest('date')
-                                   ->get();
+        $query = Transaction::where('user_id', Auth::id())->with('category');
+
+        if ($request->filled('date_from')) {
+            $query->where('date', '>=', $request->date_from);
+        }
+
+        if ($request->filled('date_to')) {
+            $query->where('date', '<=', $request->date_to);
+        }
+
+        if ($request->filled('category_id')) {
+            $query->where('category_id', $request->category_id);
+        }
+
+        $transactions = $query->latest('date')->get();
 
         $income = $transactions->where('category.type', 'income')->sum('amount');
         $expense = $transactions->where('category.type', 'expense')->sum('amount');
         $balance = $income - $expense;
 
-        return view('transactions.index', compact('transactions', 'income', 'expense', 'balance'));
+        $categories = Category::where('user_id', Auth::id())->get();
+
+        return view('transactions.index', compact('transactions', 'income', 'expense', 'balance', 'categories'));
     }
 
     public function create()
@@ -34,8 +47,7 @@ class TransactionController extends Controller
     {
         $request->validate([
             'category_id' => 'required|exists:categories,id',
-            'amount' => 'required|numeric|min:0.01',
-            'currency' => 'required|string|max:3',
+            'amount' => 'required|numeric|min:0.01|max:99999999.99',
             'description' => 'nullable|string',
             'date' => 'required|date',
         ]);
@@ -44,7 +56,7 @@ class TransactionController extends Controller
             'user_id' => Auth::id(),
             'category_id' => $request->category_id,
             'amount' => $request->amount,
-            'currency' => $request->currency,
+            'currency' => 'EUR',
             'description' => $request->description,
             'date' => $request->date,
         ]);
@@ -71,8 +83,7 @@ class TransactionController extends Controller
 
         $request->validate([
             'category_id' => 'required|exists:categories,id',
-            'amount' => 'required|numeric|min:0.01',
-            'currency' => 'required|string|max:3',
+            'amount' => 'required|numeric|min:0.01|max:99999999.99',
             'description' => 'nullable|string',
             'date' => 'required|date',
         ]);
@@ -80,7 +91,7 @@ class TransactionController extends Controller
         $transaction->update([
             'category_id' => $request->category_id,
             'amount' => $request->amount,
-            'currency' => $request->currency,
+            'currency' => 'EUR',
             'description' => $request->description,
             'date' => $request->date,
         ]);

@@ -4,6 +4,41 @@
 <div class="max-w-3xl mx-auto bg-gray-800 p-6 rounded shadow text-white">
     <h2 class="text-xl font-semibold mb-4">Transakcijų sąrašas</h2>
 
+    {{-- Filtravimo forma --}}
+    <form method="GET" action="{{ route('transactions.index') }}" class="mb-6 flex flex-wrap gap-4 items-end text-white">
+        <div>
+            <label class="block text-sm mb-1" for="date_from">Nuo</label>
+            <input type="date" name="date_from" id="date_from" value="{{ request('date_from') }}"
+                   class="px-3 py-1 rounded border dark:bg-gray-700 dark:text-white">
+        </div>
+        <div>
+            <label class="block text-sm mb-1" for="date_to">Iki</label>
+            <input type="date" name="date_to" id="date_to" value="{{ request('date_to') }}"
+                   class="px-3 py-1 rounded border dark:bg-gray-700 dark:text-white">
+        </div>
+        <div>
+            <label class="block text-sm mb-1" for="category_id">Kategorija</label>
+            <select name="category_id" id="category_id" class="px-3 py-1 rounded border dark:bg-gray-700 dark:text-white">
+                <option value="">– Visos –</option>
+                @foreach ($categories as $category)
+                    <option value="{{ $category->id }}" {{ request('category_id') == $category->id ? 'selected' : '' }}>
+                        {{ $category->name }} ({{ $category->type === 'income' ? 'Pajamos' : 'Išlaidos' }})
+                    </option>
+                @endforeach
+            </select>
+        </div>
+            <div class="flex gap-2">
+                <button type="submit"
+                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+                 Filtruoti
+                 </button>
+                    <a href="{{ route('transactions.index') }}"
+       class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded inline-block">
+        Valyti filtrus
+    </a>
+</div>
+    </form>
+
     <div class="mb-4">
         <p class="text-lg">
             <span class="font-semibold">Balansas:</span>

@@ -12,31 +12,40 @@
             <select name="category_id" class="w-full px-4 py-2 rounded border dark:bg-gray-700 dark:text-white" required>
                 <option value="">-- Pasirinkti --</option>
                 @foreach ($categories as $category)
-                    <option value="{{ $category->id }}">
+                    <option value="{{ $category->id }}" {{ old('category_id') == $category->id ? 'selected' : '' }}>
                         {{ $category->name }} ({{ $category->type === 'income' ? 'Pajamos' : 'Išlaidos' }})
                     </option>
                 @endforeach
             </select>
+            @error('category_id')
+                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+            @enderror
         </div>
 
         <div class="mb-4">
             <label class="block text-gray-700 dark:text-gray-200 mb-1">Suma</label>
-            <input type="number" step="0.01" name="amount" class="w-full px-4 py-2 rounded border dark:bg-gray-700 dark:text-white" required>
+            <input type="number" step="0.01" name="amount" value="{{ old('amount') }}"
+                   class="w-full px-4 py-2 rounded border dark:bg-gray-700 dark:text-white" required>
+            @error('amount')
+                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+            @enderror
         </div>
 
-        <div class="mb-4">
-            <label class="block text-gray-700 dark:text-gray-200 mb-1">Valiuta</label>
-            <input type="text" name="currency" value="EUR" maxlength="3" class="w-full px-4 py-2 rounded border dark:bg-gray-700 dark:text-white" required>
-        </div>
+        <input type="hidden" name="currency" value="EUR">
 
         <div class="mb-4">
             <label class="block text-gray-700 dark:text-gray-200 mb-1">Aprašymas (nebūtinas)</label>
-            <textarea name="description" rows="2" class="w-full px-4 py-2 rounded border dark:bg-gray-700 dark:text-white"></textarea>
+            <textarea name="description" rows="2"
+                      class="w-full px-4 py-2 rounded border dark:bg-gray-700 dark:text-white">{{ old('description') }}</textarea>
         </div>
 
         <div class="mb-4">
             <label class="block text-gray-700 dark:text-gray-200 mb-1">Data</label>
-            <input type="date" name="date" class="w-full px-4 py-2 rounded border dark:bg-gray-700 dark:text-white" required>
+            <input type="date" name="date" value="{{ old('date') }}"
+                   class="w-full px-4 py-2 rounded border dark:bg-gray-700 dark:text-white" required>
+            @error('date')
+                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+            @enderror
         </div>
 
         <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">Išsaugoti</button>

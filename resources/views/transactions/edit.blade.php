@@ -12,35 +12,40 @@
             <label class="block text-gray-700 dark:text-gray-200 mb-1">Kategorija</label>
             <select name="category_id" class="w-full px-4 py-2 rounded border dark:bg-gray-700 dark:text-white" required>
                 @foreach ($categories as $category)
-                    <option value="{{ $category->id }}" @selected($transaction->category_id === $category->id)>
+                    <option value="{{ $category->id }}" {{ old('category_id', $transaction->category_id) == $category->id ? 'selected' : '' }}>
                         {{ $category->name }} ({{ $category->type === 'income' ? 'Pajamos' : 'Išlaidos' }})
                     </option>
                 @endforeach
             </select>
+            @error('category_id')
+                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+            @enderror
         </div>
 
         <div class="mb-4">
             <label class="block text-gray-700 dark:text-gray-200 mb-1">Suma</label>
-            <input type="number" step="0.01" name="amount" value="{{ $transaction->amount }}"
+            <input type="number" step="0.01" name="amount" value="{{ old('amount', $transaction->amount) }}"
                    class="w-full px-4 py-2 rounded border dark:bg-gray-700 dark:text-white" required>
+            @error('amount')
+                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+            @enderror
         </div>
 
-        <div class="mb-4">
-            <label class="block text-gray-700 dark:text-gray-200 mb-1">Valiuta</label>
-            <input type="text" name="currency" maxlength="3" value="{{ $transaction->currency }}"
-                   class="w-full px-4 py-2 rounded border dark:bg-gray-700 dark:text-white" required>
-        </div>
+        <input type="hidden" name="currency" value="EUR">
 
         <div class="mb-4">
             <label class="block text-gray-700 dark:text-gray-200 mb-1">Aprašymas</label>
             <textarea name="description" rows="2"
-                      class="w-full px-4 py-2 rounded border dark:bg-gray-700 dark:text-white">{{ $transaction->description }}</textarea>
+                      class="w-full px-4 py-2 rounded border dark:bg-gray-700 dark:text-white">{{ old('description', $transaction->description) }}</textarea>
         </div>
 
         <div class="mb-4">
             <label class="block text-gray-700 dark:text-gray-200 mb-1">Data</label>
-            <input type="date" name="date" value="{{ $transaction->date }}"
+            <input type="date" name="date" value="{{ old('date', $transaction->date) }}"
                    class="w-full px-4 py-2 rounded border dark:bg-gray-700 dark:text-white" required>
+            @error('date')
+                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+            @enderror
         </div>
 
         <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">Išsaugoti</button>
