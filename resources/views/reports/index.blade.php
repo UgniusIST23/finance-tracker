@@ -1,8 +1,10 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="max-w-4xl mx-auto bg-gray-800 p-6 rounded shadow text-white">
-    <h2 class="text-xl font-semibold mb-6">📊 Finansinė ataskaita</h2>
+<div class="max-w-6xl mx-auto bg-gray-800 p-6 rounded shadow text-white">
+    <h2 class="text-2xl font-bold mb-6 flex items-center gap-2">
+        Finansinė ataskaita
+    </h2>
 
     {{-- Filtravimo forma --}}
     <form method="GET" action="{{ route('reports.index') }}" class="mb-6 flex flex-wrap gap-4 items-end text-white">
@@ -26,8 +28,29 @@
         </div>
     </form>
 
+    {{-- Apibendrinimas --}}
+    <div class="mb-6">
+        <h3 class="text-lg font-semibold mb-2">Bendri duomenys</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-gray-700 p-4 rounded">
+                <p class="text-sm text-gray-400">Pajamos</p>
+                <p class="text-green-400 text-lg font-bold">+{{ number_format($incomeTotal, 2) }} EUR</p>
+            </div>
+            <div class="bg-gray-700 p-4 rounded">
+                <p class="text-sm text-gray-400">Išlaidos</p>
+                <p class="text-red-400 text-lg font-bold">-{{ number_format($expenseTotal, 2) }} EUR</p>
+            </div>
+            <div class="bg-gray-700 p-4 rounded">
+                <p class="text-sm text-gray-400">Viso</p>
+                <p class="text-lg font-bold {{ $balance >= 0 ? 'text-green-300' : 'text-red-300' }}">
+                    {{ number_format($balance, 2) }} EUR
+                </p>
+            </div>
+        </div>
+    </div>
+
     {{-- Ataskaita pagal kategorijas --}}
-    <h3 class="text-lg font-semibold mb-2">Suminiai duomenys pagal kategorijas</h3>
+    <h3 class="text-lg font-semibold mb-2">Išlaidos/pajamos pagal kategorijas</h3>
     <div class="space-y-2 mb-6">
         @forelse ($byCategory as $category => $data)
             <div class="bg-gray-700 px-4 py-2 rounded flex justify-between">
@@ -43,10 +66,80 @@
 
     {{-- Min, Max, Avg --}}
     <h3 class="text-lg font-semibold mb-2">Analizė</h3>
-    <ul class="list-disc list-inside text-gray-200 space-y-1">
-        <li>Minimali transakcija: <span class="text-blue-400">{{ number_format($min ?? 0, 2) }} EUR</span></li>
-        <li>Maksimali transakcija: <span class="text-blue-400">{{ number_format($max ?? 0, 2) }} EUR</span></li>
-        <li>Vidutinė transakcija: <span class="text-blue-400">{{ number_format($avg ?? 0, 2) }} EUR</span></li>
+    <ul class="list-disc list-inside text-gray-200 space-y-1 mb-6">
+        <li>Mažiausia transakcija: <span class="text-blue-400">{{ number_format($min ?? 0, 2) }} EUR</span></li>
+        <li>Didžiausia transakcija: <span class="text-blue-400">{{ number_format($max ?? 0, 2) }} EUR</span></li>
+        <li>Vidutinis transakcijos dydis: <span class="text-blue-400">{{ number_format($avg ?? 0, 2) }} EUR</span></li>
     </ul>
+
+    {{-- Diagramos --}}
+    <h3 class="text-lg font-semibold mb-2">Grafikai pagal kategorijas</h3>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-white p-4 rounded text-black">
+        <div>
+            <h4 class="text-sm font-semibold mb-2">Pajamų diagrama</h4>
+            <canvas id="incomeChart" height="200"></canvas>
+        </div>
+        <div>
+            <h4 class="text-sm font-semibold mb-2">Išlaidų diagrama</h4>
+            <canvas id="expenseChart" height="200"></canvas>
+        </div>
+        <div>
+            <h4 class="text-sm font-semibold mb-2">Bendra diagrama</h4>
+            <canvas id="combinedChart" height="200"></canvas>
+        </div>
+    </div>
 </div>
+@endsection
+
+@section('scripts')
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const incomeChart = new Chart(document.getElementById('incomeChart'), {
+        type: 'bar',
+        data: {
+            labels: {!! json_encode($incomeData->keys()) !!},
+            datasets: [{
+                label: 'Pajamos',
+                data: {!! json_encode($incomeData->values()) !!},
+                backgroundColor: 'rgba(34, 197, 94, 0.6)',
+                borderColor: 'rgba(34, 197, 94, 1)',
+                borderWidth: 1
+            }]
+        }
+    });
+
+    const expenseChart = new Chart(document.getElementById('expenseChart'), {
+        type: 'bar',
+        data: {
+            labels: {!! json_encode($expenseData->keys()) !!},
+            datasets: [{
+                label: 'Išlaidos',
+                data: {!! json_encode($expenseData->values()) !!},
+                backgroundColor: 'rgba(239, 68, 68, 0.6)',
+                borderColor: 'rgba(239, 68, 68, 1)',
+                borderWidth: 1
+            }]
+        }
+    });
+
+    const combinedChart = new Chart(document.getElementById('combinedChart'), {
+        type: 'pie',
+        data: {
+            labels: {!! json_encode($combinedData->keys()) !!},
+            datasets: [{
+                label: 'Suma pagal kategoriją',
+                data: {!! json_encode($combinedData->map(fn($item) => $item['sum'])->values()) !!},
+                backgroundColor: [
+                    'rgba(34, 197, 94, 0.6)',
+                    'rgba(239, 68, 68, 0.6)',
+                    'rgba(59, 130, 246, 0.6)',
+                    'rgba(250, 204, 21, 0.6)',
+                    'rgba(168, 85, 247, 0.6)'
+                ],
+                borderColor: 'rgba(255, 255, 255, 0.1)',
+                borderWidth: 1
+            }]
+        }
+    });
+</script>
 @endsection

@@ -26,5 +26,8 @@
             @yield('content')
         </main>
     </div>
+
+    {{-- Papildomi skriptai iš blade failų --}}
+    @yield('scripts')
 </body>
 </html>

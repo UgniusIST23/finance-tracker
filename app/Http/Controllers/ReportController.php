@@ -36,6 +36,39 @@ class ReportController extends Controller
         $max = $transactions->max('amount');
         $avg = $transactions->avg('amount');
 
-        return view('reports.index', compact('byCategory', 'min', 'max', 'avg'));
+        // Pajamos, išlaidos ir balansas
+        $incomeTotal = $transactions->filter(fn($t) => $t->category->type === 'income')->sum('amount');
+        $expenseTotal = $transactions->filter(fn($t) => $t->category->type === 'expense')->sum('amount');
+        $balance = $incomeTotal - $expenseTotal;
+
+        // Pajamų grafiko duomenys
+        $incomeData = $transactions->filter(fn($t) => $t->category->type === 'income')
+            ->groupBy(fn($t) => $t->category->name)
+            ->map(fn($group) => $group->sum('amount'));
+
+        // Išlaidų grafiko duomenys
+        $expenseData = $transactions->filter(fn($t) => $t->category->type === 'expense')
+            ->groupBy(fn($t) => $t->category->name)
+            ->map(fn($group) => $group->sum('amount'));
+
+        // Bendras grafikas (pajamos ir išlaidos vienoje vietoje)
+        $combinedData = $transactions->groupBy(fn($t) => $t->category->name)
+            ->map(fn($group) => [
+                'type' => $group->first()->category->type,
+                'sum' => $group->sum('amount'),
+            ]);
+
+        return view('reports.index', compact(
+            'byCategory',
+            'min',
+            'max',
+            'avg',
+            'incomeTotal',
+            'expenseTotal',
+            'balance',
+            'incomeData',
+            'expenseData',
+            'combinedData'
+        ));
     }
 }

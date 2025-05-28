@@ -11,29 +11,41 @@ class TransactionController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Transaction::where('user_id', Auth::id())->with('category');
+        $perPage = $request->input('per_page', 10); // 10 pagal nutylėjimą
+
+        $baseQuery = Transaction::where('user_id', Auth::id())->with('category');
 
         if ($request->filled('date_from')) {
-            $query->where('date', '>=', $request->date_from);
+            $baseQuery->where('date', '>=', $request->date_from);
         }
 
         if ($request->filled('date_to')) {
-            $query->where('date', '<=', $request->date_to);
+            $baseQuery->where('date', '<=', $request->date_to);
         }
 
         if ($request->filled('category_id')) {
-            $query->where('category_id', $request->category_id);
+            $baseQuery->where('category_id', $request->category_id);
         }
 
-        $transactions = $query->latest('date')->get();
+        // Paginacija
+        $transactions = (clone $baseQuery)->latest('date')->paginate($perPage);
 
-        $income = $transactions->where('category.type', 'income')->sum('amount');
-        $expense = $transactions->where('category.type', 'expense')->sum('amount');
+        // Viso balanso skaičiavimui (ne tik iš rodomų puslapyje)
+        $allFiltered = (clone $baseQuery)->get();
+
+        $income = $allFiltered->filter(fn($t) => $t->category->type === 'income')->sum('amount');
+        $expense = $allFiltered->filter(fn($t) => $t->category->type === 'expense')->sum('amount');
         $balance = $income - $expense;
 
         $categories = Category::where('user_id', Auth::id())->get();
 
-        return view('transactions.index', compact('transactions', 'income', 'expense', 'balance', 'categories'));
+        return view('transactions.index', compact(
+            'transactions',
+            'income',
+            'expense',
+            'balance',
+            'categories'
+        ));
     }
 
     public function create()
@@ -47,7 +59,8 @@ class TransactionController extends Controller
     {
         $request->validate([
             'category_id' => 'required|exists:categories,id',
-            'amount' => 'required|numeric|min:0.01|max:99999999.99',
+            'amount' => 'required|numeric|min:0.01',
+            'currency' => 'required|string|max:3',
             'description' => 'nullable|string',
             'date' => 'required|date',
         ]);
@@ -56,7 +69,7 @@ class TransactionController extends Controller
             'user_id' => Auth::id(),
             'category_id' => $request->category_id,
             'amount' => $request->amount,
-            'currency' => 'EUR',
+            'currency' => $request->currency,
             'description' => $request->description,
             'date' => $request->date,
         ]);
@@ -83,7 +96,8 @@ class TransactionController extends Controller
 
         $request->validate([
             'category_id' => 'required|exists:categories,id',
-            'amount' => 'required|numeric|min:0.01|max:99999999.99',
+            'amount' => 'required|numeric|min:0.01',
+            'currency' => 'required|string|max:3',
             'description' => 'nullable|string',
             'date' => 'required|date',
         ]);
@@ -91,7 +105,7 @@ class TransactionController extends Controller
         $transaction->update([
             'category_id' => $request->category_id,
             'amount' => $request->amount,
-            'currency' => 'EUR',
+            'currency' => $request->currency,
             'description' => $request->description,
             'date' => $request->date,
         ]);
