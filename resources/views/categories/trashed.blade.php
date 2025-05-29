@@ -2,17 +2,16 @@
 
 @section('content')
 <div class="max-w-3xl mx-auto bg-gray-800 p-6 rounded shadow text-white">
-
     <div class="flex justify-between items-center mb-4">
-        <h2 class="text-xl font-semibold">Kategorijų sąrašas</h2>
-        <a href="{{ route('categories.trashed') }}"
+        <h2 class="text-xl font-semibold">Ištrintos kategorijos</h2>
+        <a href="{{ route('categories.index') }}"
            class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded text-sm">
-            Ištrintos kategorijos
+            ← Grįžti į sąrašą
         </a>
     </div>
 
     {{-- Filtravimo forma --}}
-    <form method="GET" action="{{ route('categories.index') }}" class="mb-6 flex flex-wrap gap-4 items-end text-white">
+    <form method="GET" action="{{ route('categories.trashed') }}" class="mb-6 flex flex-wrap gap-4 items-end text-white">
         <div>
             <label for="type" class="block text-sm mb-1">Tipas</label>
             <select name="type" id="type" onchange="this.form.submit()"
@@ -42,10 +41,6 @@
         </div>
     @endif
 
-    <a href="{{ route('categories.create') }}" class="text-blue-400 hover:text-blue-600 mb-4 inline-block">
-        Nauja kategorija
-    </a>
-
     {{-- Kategorijų sąrašas --}}
     @forelse ($categories as $category)
         <div class="flex justify-between items-center bg-gray-700 px-4 py-2 rounded mb-2">
@@ -54,20 +49,25 @@
                 ({{ $category->type === 'income' ? 'Pajamos' : 'Išlaidos' }})
             </div>
             <div class="flex gap-2">
-                <a href="{{ route('categories.edit', $category) }}"
-                   class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded text-sm">Redaguoti</a>
-                <form action="{{ route('categories.destroy', $category) }}" method="POST">
+                <form action="{{ route('categories.restore', $category->id) }}" method="POST">
+                    @csrf
+                    <button type="submit"
+                            class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm">
+                        Atkurti
+                    </button>
+                </form>
+                <form action="{{ route('categories.forceDelete', $category->id) }}" method="POST">
                     @csrf
                     @method('DELETE')
                     <button type="submit"
                             class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm">
-                        Trinti
+                        Trinti visam
                     </button>
                 </form>
             </div>
         </div>
     @empty
-        <p class="text-gray-400 mt-4">Neturi sukurtų kategorijų.</p>
+        <p class="text-gray-400 mt-4">Ištrintų kategorijų nėra.</p>
     @endforelse
 
     {{-- Puslapiavimas --}}

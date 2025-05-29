@@ -8,9 +8,17 @@ use Illuminate\Support\Facades\Auth;
 
 class CategoryController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $categories = Category::where('user_id', Auth::id())->get();
+        $query = Category::where('user_id', Auth::id());
+
+        if ($request->has('type') && in_array($request->type, ['income', 'expense'])) {
+            $query->where('type', $request->type);
+        }
+
+        $perPage = $request->get('per_page', 10);
+        $categories = $query->latest()->paginate($perPage)->withQueryString();
+
         return view('categories.index', compact('categories'));
     }
 
@@ -71,6 +79,42 @@ class CategoryController extends Controller
 
         $category->delete();
 
-        return redirect()->route('categories.index')->with('success', 'Kategorija ištrinta.');
+        return redirect()->route('categories.index')->with('success', 'Kategorija ištrinta (soft delete).');
+    }
+
+    public function trashed(Request $request)
+    {
+        $query = Category::onlyTrashed()->where('user_id', Auth::id());
+
+        if ($request->has('type') && in_array($request->type, ['income', 'expense'])) {
+            $query->where('type', $request->type);
+        }
+
+        $perPage = $request->get('per_page', 10);
+        $categories = $query->latest('deleted_at')->paginate($perPage)->withQueryString();
+
+        return view('categories.trashed', compact('categories'));
+    }
+
+    public function restore($id)
+    {
+        $category = Category::onlyTrashed()
+            ->where('user_id', Auth::id())
+            ->findOrFail($id);
+
+        $category->restore();
+
+        return redirect()->route('categories.trashed')->with('success', 'Kategorija atkurta.');
+    }
+
+    public function forceDelete($id)
+    {
+        $category = Category::onlyTrashed()
+            ->where('user_id', Auth::id())
+            ->findOrFail($id);
+
+        $category->forceDelete();
+
+        return redirect()->route('categories.trashed')->with('success', 'Kategorija galutinai ištrinta.');
     }
 }

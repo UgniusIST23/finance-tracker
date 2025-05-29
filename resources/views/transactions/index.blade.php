@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="max-w-3xl mx-auto bg-gray-800 p-6 rounded shadow text-white">
+<div class="max-w-5xl mx-auto bg-gray-800 p-6 rounded shadow text-white">
     <h2 class="text-xl font-semibold mb-4">Transakcijų sąrašas</h2>
 
     {{-- Filtravimo forma --}}

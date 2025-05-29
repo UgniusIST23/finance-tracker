@@ -19,6 +19,10 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
+    Route::get('/categories/trashed', [CategoryController::class, 'trashed'])->name('categories.trashed');
+    Route::post('/categories/{id}/restore', [CategoryController::class, 'restore'])->name('categories.restore');
+    Route::delete('/categories/{id}/force-delete', [CategoryController::class, 'forceDelete'])->name('categories.forceDelete');
+
     Route::resource('categories', CategoryController::class);
     Route::resource('transactions', TransactionController::class);
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
