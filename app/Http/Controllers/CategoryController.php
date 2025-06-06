@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
+use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -71,15 +72,24 @@ class CategoryController extends Controller
         return redirect()->route('categories.index')->with('success', 'Kategorija atnaujinta sėkmingai.');
     }
 
-    public function destroy(Category $category)
+    public function destroy(Request $request, Category $category)
     {
         if ($category->user_id !== Auth::id()) {
             abort(403);
         }
 
+        $deleteTransactions = $request->has('delete_transactions');
+
+        if ($deleteTransactions) {
+            $category->transactions()->delete(); // Soft delete
+        }
+
         $category->delete();
 
-        return redirect()->route('categories.index')->with('success', 'Kategorija ištrinta (soft delete).');
+        return redirect()->route('categories.index')->with(
+            'success',
+            'Kategorija ištrinta' . ($deleteTransactions ? ' kartu su transakcijomis.' : '.')
+        );
     }
 
     public function trashed(Request $request)
@@ -104,7 +114,13 @@ class CategoryController extends Controller
 
         $category->restore();
 
-        return redirect()->route('categories.trashed')->with('success', 'Kategorija atkurta.');
+        // Atkuriame susijusias transakcijas (jei jos buvo soft-deleted)
+        Transaction::onlyTrashed()
+            ->where('user_id', Auth::id())
+            ->where('category_id', $category->id)
+            ->restore();
+
+        return redirect()->route('categories.trashed')->with('success', 'Kategorija ir jos transakcijos atkurti.');
     }
 
     public function forceDelete($id)
@@ -113,8 +129,14 @@ class CategoryController extends Controller
             ->where('user_id', Auth::id())
             ->findOrFail($id);
 
+        // Ištriname transakcijas visam laikui
+        Transaction::withTrashed()
+            ->where('user_id', Auth::id())
+            ->where('category_id', $category->id)
+            ->forceDelete();
+
         $category->forceDelete();
 
-        return redirect()->route('categories.trashed')->with('success', 'Kategorija galutinai ištrinta.');
+        return redirect()->route('categories.trashed')->with('success', 'Kategorija ir jos transakcijos ištrintos visam laikui.');
     }
 }

@@ -23,36 +23,34 @@ class ReportController extends Controller
 
         $transactions = $query->get();
 
-        // Grupavimas pagal kategoriją
-        $byCategory = $transactions->groupBy('category.name')->map(function ($group) {
-            return [
-                'type' => $group->first()->category->type,
-                'sum' => $group->sum('amount'),
-            ];
-        });
+        $byCategory = $transactions->filter(fn($t) => $t->category)
+            ->groupBy('category.name')
+            ->map(function ($group) {
+                $first = $group->first();
+                return [
+                    'type' => $first->category->type,
+                    'sum' => $group->sum('amount'),
+                ];
+            });
 
-        // Analizė
         $min = $transactions->min('amount');
         $max = $transactions->max('amount');
         $avg = $transactions->avg('amount');
 
-        // Pajamos, išlaidos ir balansas
-        $incomeTotal = $transactions->filter(fn($t) => $t->category->type === 'income')->sum('amount');
-        $expenseTotal = $transactions->filter(fn($t) => $t->category->type === 'expense')->sum('amount');
+        $incomeTotal = $transactions->filter(fn($t) => $t->category && $t->category->type === 'income')->sum('amount');
+        $expenseTotal = $transactions->filter(fn($t) => $t->category && $t->category->type === 'expense')->sum('amount');
         $balance = $incomeTotal - $expenseTotal;
 
-        // Pajamų grafiko duomenys
-        $incomeData = $transactions->filter(fn($t) => $t->category->type === 'income')
+        $incomeData = $transactions->filter(fn($t) => $t->category && $t->category->type === 'income')
             ->groupBy(fn($t) => $t->category->name)
             ->map(fn($group) => $group->sum('amount'));
 
-        // Išlaidų grafiko duomenys
-        $expenseData = $transactions->filter(fn($t) => $t->category->type === 'expense')
+        $expenseData = $transactions->filter(fn($t) => $t->category && $t->category->type === 'expense')
             ->groupBy(fn($t) => $t->category->name)
             ->map(fn($group) => $group->sum('amount'));
 
-        // Bendras grafikas (pajamos ir išlaidos vienoje vietoje)
-        $combinedData = $transactions->groupBy(fn($t) => $t->category->name)
+        $combinedData = $transactions->filter(fn($t) => $t->category)
+            ->groupBy(fn($t) => $t->category->name)
             ->map(fn($group) => [
                 'type' => $group->first()->category->type,
                 'sum' => $group->sum('amount'),

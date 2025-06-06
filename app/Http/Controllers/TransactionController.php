@@ -11,7 +11,7 @@ class TransactionController extends Controller
 {
     public function index(Request $request)
     {
-        $perPage = $request->input('per_page', 10); // 10 pagal nutylėjimą
+        $perPage = $request->input('per_page', 10);
 
         $baseQuery = Transaction::where('user_id', Auth::id())->with('category');
 
@@ -27,17 +27,19 @@ class TransactionController extends Controller
             $baseQuery->where('category_id', $request->category_id);
         }
 
-        // Paginacija
         $transactions = (clone $baseQuery)->latest('date')->paginate($perPage);
-
-        // Viso balanso skaičiavimui (ne tik iš rodomų puslapyje)
         $allFiltered = (clone $baseQuery)->get();
 
-        $income = $allFiltered->filter(fn($t) => $t->category->type === 'income')->sum('amount');
-        $expense = $allFiltered->filter(fn($t) => $t->category->type === 'expense')->sum('amount');
+        $income = $allFiltered->filter(fn($t) => $t->category && $t->category->type === 'income')->sum('amount');
+        $expense = $allFiltered->filter(fn($t) => $t->category && $t->category->type === 'expense')->sum('amount');
         $balance = $income - $expense;
 
-        $categories = Category::where('user_id', Auth::id())->get();
+        $categories = Category::withTrashed()
+            ->where('user_id', Auth::id())
+            ->whereHas('transactions', function ($query) {
+                $query->whereNull('deleted_at');
+            })
+            ->get();
 
         return view('transactions.index', compact(
             'transactions',
@@ -83,7 +85,7 @@ class TransactionController extends Controller
             abort(403);
         }
 
-        $categories = Category::where('user_id', Auth::id())->get();
+        $categories = Category::withTrashed()->where('user_id', Auth::id())->get();
 
         return view('transactions.edit', compact('transaction', 'categories'));
     }

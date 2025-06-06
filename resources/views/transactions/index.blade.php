@@ -23,6 +23,7 @@
                 @foreach ($categories as $category)
                     <option value="{{ $category->id }}" {{ request('category_id') == $category->id ? 'selected' : '' }}>
                         {{ $category->name }} ({{ $category->type === 'income' ? 'Pajamos' : 'Išlaidos' }})
+                        {{ $category->trashed() ? '(LAIKINAI IŠTRINTA)' : '' }}
                     </option>
                 @endforeach
             </select>
@@ -71,8 +72,16 @@
     @forelse ($transactions as $transaction)
         <div class="flex justify-between items-center bg-gray-700 px-4 py-2 rounded mb-2">
             <div>
-                <strong>{{ $transaction->category->name }}</strong>
-                ({{ $transaction->category->type === 'income' ? 'Pajamos' : 'Išlaidos' }})<br>
+                <strong>
+                    {{ $transaction->category?->name ?? 'Nenurodyta kategorija' }}
+                    @if($transaction->category && $transaction->category->trashed())
+                        <span class="text-yellow-400">(KATEGORIJA LAIKINAI IŠTRINTA)</span>
+                    @endif
+                </strong>
+                @if($transaction->category)
+                    ({{ $transaction->category->type === 'income' ? 'Pajamos' : 'Išlaidos' }})
+                @endif
+                <br>
                 <span class="text-sm text-gray-300">
                     {{ number_format($transaction->amount, 2) }} {{ strtoupper($transaction->currency) }} – {{ $transaction->date }}
                     @if ($transaction->description)<br>{{ $transaction->description }}@endif

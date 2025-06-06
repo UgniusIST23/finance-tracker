@@ -12,7 +12,7 @@ class DummyTransactionSeeder extends Seeder
 {
     public function run(): void
     {
-        $user = User::first(); // Galima pritaikyti konkrečiam user_id
+        $user = User::find(2);
         if (!$user) return;
 
         $categories = [
