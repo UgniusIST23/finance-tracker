@@ -11,7 +11,9 @@ class ReportController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Transaction::where('user_id', Auth::id())->with('category');
+        $query = Transaction::where('user_id', Auth::id())->with(['category' => function ($q) {
+            $q->withTrashed();
+        }]);
 
         if ($request->filled('date_from')) {
             $query->where('date', '>=', $request->date_from);
@@ -23,13 +25,18 @@ class ReportController extends Controller
 
         $transactions = $query->get();
 
-        $byCategory = $transactions->filter(fn($t) => $t->category)
-            ->groupBy('category.name')
+        $byCategory = $transactions
+            ->groupBy(function ($t) {
+                return $t->category->name ?? 'KATEGORIJA IŠTRINTA';
+            })
             ->map(function ($group) {
                 $first = $group->first();
                 return [
-                    'type' => $first->category->type,
+                    'type' => $first->category->type ?? 'unknown',
                     'sum' => $group->sum('amount'),
+                    'trashed' => $first->category
+                        ? ($first->category->trashed() ? 'soft' : null)
+                        : 'hard',
                 ];
             });
 
@@ -37,24 +44,53 @@ class ReportController extends Controller
         $max = $transactions->max('amount');
         $avg = $transactions->avg('amount');
 
-        $incomeTotal = $transactions->filter(fn($t) => $t->category && $t->category->type === 'income')->sum('amount');
-        $expenseTotal = $transactions->filter(fn($t) => $t->category && $t->category->type === 'expense')->sum('amount');
+        $incomeTotal = $transactions
+            ->filter(fn($t) => $t->category && $t->category->type === 'income')
+            ->sum('amount');
+
+        $expenseTotal = $transactions
+            ->filter(fn($t) => $t->category && $t->category->type === 'expense')
+            ->sum('amount');
+
         $balance = $incomeTotal - $expenseTotal;
 
-        $incomeData = $transactions->filter(fn($t) => $t->category && $t->category->type === 'income')
-            ->groupBy(fn($t) => $t->category->name)
+        $incomeData = $transactions
+            ->filter(fn($t) => $t->category && $t->category->type === 'income')
+            ->groupBy(fn($t) => $t->category->name ?? 'KATEGORIJA IŠTRINTA')
             ->map(fn($group) => $group->sum('amount'));
 
-        $expenseData = $transactions->filter(fn($t) => $t->category && $t->category->type === 'expense')
-            ->groupBy(fn($t) => $t->category->name)
+        $expenseData = $transactions
+            ->filter(fn($t) => $t->category && $t->category->type === 'expense')
+            ->groupBy(fn($t) => $t->category->name ?? 'KATEGORIJA IŠTRINTA')
             ->map(fn($group) => $group->sum('amount'));
 
-        $combinedData = $transactions->filter(fn($t) => $t->category)
-            ->groupBy(fn($t) => $t->category->name)
-            ->map(fn($group) => [
-                'type' => $group->first()->category->type,
-                'sum' => $group->sum('amount'),
-            ]);
+        $combinedData = $transactions
+            ->map(function ($t) {
+                if (!$t->category) {
+                    return [
+                        'name' => 'KATEGORIJA IŠTRINTA',
+                        'type' => 'unknown',
+                        'sum' => $t->amount,
+                        'trashed' => 'hard',
+                    ];
+                }
+
+                return [
+                    'name' => $t->category->name,
+                    'type' => $t->category->type,
+                    'sum' => $t->amount,
+                    'trashed' => $t->category->trashed() ? 'soft' : null,
+                ];
+            })
+            ->groupBy('name')
+            ->map(function ($group) {
+                $first = $group->first();
+                return [
+                    'type' => $first['type'],
+                    'sum' => $group->sum('sum'),
+                    'trashed' => $first['trashed'],
+                ];
+            });
 
         return view('reports.index', compact(
             'byCategory',

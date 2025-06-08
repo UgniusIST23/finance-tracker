@@ -34,7 +34,6 @@
         </div>
     </form>
 
-    {{-- Sėkmės pranešimas --}}
     @if (session('success'))
         <div class="mb-4 text-green-500">
             {{ session('success') }}
@@ -56,23 +55,92 @@
                         Atkurti
                     </button>
                 </form>
-                <form action="{{ route('categories.forceDelete', $category->id) }}" method="POST">
-                    @csrf
-                    @method('DELETE')
-                    <button type="submit"
-                            class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm">
-                        Trinti visam
-                    </button>
-                </form>
+
+                <button type="button"
+                        onclick="openDeleteModal({{ $category->id }}, '{{ $category->name }}')"
+                        class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm">
+                    Trinti visam
+                </button>
             </div>
         </div>
     @empty
         <p class="text-gray-400 mt-4">Ištrintų kategorijų nėra.</p>
     @endforelse
 
-    {{-- Puslapiavimas --}}
     <div class="mt-6">
         {{ $categories->withQueryString()->links() }}
     </div>
 </div>
+
+{{-- Modal langas --}}
+<div id="deleteModal" class="fixed inset-0 bg-black bg-opacity-60 hidden flex items-center justify-center z-50">
+    <div class="bg-white text-black rounded-lg max-w-lg w-full p-6">
+        <h2 class="text-xl font-semibold mb-4">Ar tikrai norite ištrinti kategoriją?</h2>
+        <p id="modalCategoryName" class="mb-2 font-medium"></p>
+        <form method="POST" action="" id="deleteForm" onsubmit="handleDeleteSubmit(event)">
+            @csrf
+            @method('DELETE')
+            <input type="hidden" name="category_id" id="modalCategoryId">
+            <label class="flex items-center gap-2 mb-4">
+                <input type="checkbox" name="delete_transactions" id="deleteTransactions" class="form-checkbox">
+                Taip, noriu ištrinti ir su šia kategorija susijusias transakcijas
+            </label>
+            <div id="modalTransactions" class="max-h-48 overflow-y-auto bg-gray-100 text-sm p-3 rounded mb-4">
+                Transakcijų sąrašas kraunamas...
+            </div>
+            <div class="flex justify-end gap-2">
+                <button type="button" onclick="closeDeleteModal()"
+                        class="px-4 py-2 bg-gray-400 hover:bg-gray-500 text-white rounded">Atšaukti</button>
+                <button type="submit"
+                        class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded">Trinti</button>
+            </div>
+        </form>
+    </div>
+</div>
+@endsection
+
+@section('scripts')
+<script>
+    const baseUrl = "{{ url('') }}";
+    let currentCategoryId = null;
+
+    function openDeleteModal(categoryId, categoryName) {
+        currentCategoryId = categoryId;
+
+        document.getElementById('deleteModal').classList.remove('hidden');
+        document.getElementById('modalCategoryName').innerText = 'Kategorija: ' + categoryName;
+        document.getElementById('modalCategoryId').value = categoryId;
+
+        fetch(`${baseUrl}/api/categories/${categoryId}/transactions`)
+            .then(response => response.json())
+            .then(data => {
+                const container = document.getElementById('modalTransactions');
+                if (data.length === 0) {
+                    container.innerHTML = '<p>Susijusių transakcijų nėra.</p>';
+                } else {
+                    container.innerHTML = '<ul class="list-disc list-inside space-y-1">' +
+                        data.map(t => `<li>${t.date}: ${t.amount} ${t.currency} - ${t.description || 'be aprašymo'}</li>`).join('') +
+                        '</ul>';
+                }
+            });
+    }
+
+    function handleDeleteSubmit(event) {
+        event.preventDefault();
+
+        const deleteTransactions = document.getElementById('deleteTransactions').checked;
+        const form = document.getElementById('deleteForm');
+
+        let action = `${baseUrl}/categories/${currentCategoryId}`;
+        action += deleteTransactions ? '/force-delete-with-transactions' : '/force-delete';
+
+        form.action = action;
+        form.submit();
+    }
+
+    function closeDeleteModal() {
+        document.getElementById('deleteModal').classList.add('hidden');
+        currentCategoryId = null;
+    }
+</script>
 @endsection

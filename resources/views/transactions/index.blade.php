@@ -73,14 +73,16 @@
         <div class="flex justify-between items-center bg-gray-700 px-4 py-2 rounded mb-2">
             <div>
                 <strong>
-                    {{ $transaction->category?->name ?? 'Nenurodyta kategorija' }}
-                    @if($transaction->category && $transaction->category->trashed())
-                        <span class="text-yellow-400">(KATEGORIJA LAIKINAI IŠTRINTA)</span>
+                    @if ($transaction->category)
+                        {{ $transaction->category->name }}
+                        @if ($transaction->category->trashed())
+                            <span class="text-yellow-400">(KATEGORIJA LAIKINAI IŠTRINTA)</span>
+                        @endif
+                        ({{ $transaction->category->type === 'income' ? 'Pajamos' : 'Išlaidos' }})
+                    @else
+                        <span class="text-red-400">KATEGORIJA IŠTRINTA</span>
                     @endif
                 </strong>
-                @if($transaction->category)
-                    ({{ $transaction->category->type === 'income' ? 'Pajamos' : 'Išlaidos' }})
-                @endif
                 <br>
                 <span class="text-sm text-gray-300">
                     {{ number_format($transaction->amount, 2) }} {{ strtoupper($transaction->currency) }} – {{ $transaction->date }}

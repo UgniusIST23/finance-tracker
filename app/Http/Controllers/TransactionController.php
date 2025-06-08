@@ -13,7 +13,8 @@ class TransactionController extends Controller
     {
         $perPage = $request->input('per_page', 10);
 
-        $baseQuery = Transaction::where('user_id', Auth::id())->with('category');
+        $baseQuery = Transaction::where('user_id', Auth::id())
+            ->with(['category' => fn($query) => $query->withTrashed()]);
 
         if ($request->filled('date_from')) {
             $baseQuery->where('date', '>=', $request->date_from);
@@ -30,10 +31,12 @@ class TransactionController extends Controller
         $transactions = (clone $baseQuery)->latest('date')->paginate($perPage);
         $allFiltered = (clone $baseQuery)->get();
 
+        // Skaičiuojame tik tas transakcijas, kurios turi validžią kategoriją
         $income = $allFiltered->filter(fn($t) => $t->category && $t->category->type === 'income')->sum('amount');
         $expense = $allFiltered->filter(fn($t) => $t->category && $t->category->type === 'expense')->sum('amount');
         $balance = $income - $expense;
 
+        // Rodyti tik tas kategorijas, kurios turi bent vieną aktyvią transakciją
         $categories = Category::withTrashed()
             ->where('user_id', Auth::id())
             ->whereHas('transactions', function ($query) {
@@ -85,7 +88,9 @@ class TransactionController extends Controller
             abort(403);
         }
 
-        $categories = Category::withTrashed()->where('user_id', Auth::id())->get();
+        $categories = Category::withTrashed()
+            ->where('user_id', Auth::id())
+            ->get();
 
         return view('transactions.edit', compact('transaction', 'categories'));
     }

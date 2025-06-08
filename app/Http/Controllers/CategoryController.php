@@ -114,7 +114,6 @@ class CategoryController extends Controller
 
         $category->restore();
 
-        // Atkuriame susijusias transakcijas (jei jos buvo soft-deleted)
         Transaction::onlyTrashed()
             ->where('user_id', Auth::id())
             ->where('category_id', $category->id)
@@ -123,13 +122,43 @@ class CategoryController extends Controller
         return redirect()->route('categories.trashed')->with('success', 'Kategorija ir jos transakcijos atkurti.');
     }
 
-    public function forceDelete($id)
+public function forceDelete(Request $request, $id)
+{
+    $category = Category::onlyTrashed()
+        ->where('user_id', Auth::id())
+        ->findOrFail($id);
+
+    $deleteTransactions = $request->has('delete_transactions');
+
+    if ($deleteTransactions) {
+        // Ištriname transakcijas visam laikui
+        Transaction::withTrashed()
+            ->where('user_id', Auth::id())
+            ->where('category_id', $category->id)
+            ->forceDelete();
+    } else {
+        // Paliekame transakcijas, bet atskiriame jas nuo ištrintos kategorijos
+        Transaction::withTrashed()
+            ->where('user_id', Auth::id())
+            ->where('category_id', $category->id)
+            ->update(['category_id' => null]);
+    }
+
+    $category->forceDelete();
+
+    return redirect()->route('categories.trashed')->with(
+        'success',
+        'Kategorija ištrinta visam laikui' . ($deleteTransactions ? ' kartu su transakcijomis.' : '.')
+    );
+}
+
+
+    public function forceDeleteWithTransactions(Request $request, $id)
     {
         $category = Category::onlyTrashed()
             ->where('user_id', Auth::id())
             ->findOrFail($id);
 
-        // Ištriname transakcijas visam laikui
         Transaction::withTrashed()
             ->where('user_id', Auth::id())
             ->where('category_id', $category->id)
