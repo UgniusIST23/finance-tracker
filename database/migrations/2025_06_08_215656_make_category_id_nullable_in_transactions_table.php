@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('transactions', function (Blueprint $table) {
-            // Užtikriname, kad category_id gali būti NULL
+            // category_id gali būti NULL
             $table->unsignedBigInteger('category_id')->nullable()->change();
         });
     }
@@ -23,7 +23,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('transactions', function (Blueprint $table) {
-            // Grąžiname category_id kaip privalomą
+            // Grąžiname category_id
             $table->unsignedBigInteger('category_id')->nullable(false)->change();
         });
     }

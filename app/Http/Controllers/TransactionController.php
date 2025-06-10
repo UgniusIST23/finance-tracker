@@ -31,7 +31,7 @@ class TransactionController extends Controller
         $transactions = (clone $baseQuery)->latest('date')->paginate($perPage);
         $allFiltered = (clone $baseQuery)->get();
 
-        // Skaičiuojame tik tas transakcijas, kurios turi validžią kategoriją
+        // Skaičiuojame tik tas transakcijas, kurios turi kategoriją
         $income = $allFiltered->filter(fn($t) => $t->category && $t->category->type === 'income')->sum('amount');
         $expense = $allFiltered->filter(fn($t) => $t->category && $t->category->type === 'expense')->sum('amount');
         $balance = $income - $expense;

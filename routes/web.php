@@ -35,7 +35,7 @@ Route::middleware('auth')->group(function () {
     // Reports
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
 
-    // API endpoint for modal transaction listing
+    // API endpoint for modal
     Route::get('/api/categories/{id}/transactions', function ($id) {
         return Transaction::where('category_id', $id)
             ->where('user_id', Auth::id())
