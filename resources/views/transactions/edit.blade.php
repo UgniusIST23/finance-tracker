@@ -13,9 +13,25 @@
             <select name="category_id" class="w-full px-4 py-2 rounded border dark:bg-gray-700 dark:text-white" required>
                 @foreach ($categories as $category)
                     <option value="{{ $category->id }}" {{ old('category_id', $transaction->category_id) == $category->id ? 'selected' : '' }}>
-                        {{ $category->name }} ({{ $category->type === 'income' ? 'Pajamos' : 'Išlaidos' }})
+                        {{ $category->name }} 
+                        ({{ $category->type === 'income' ? 'Pajamos' : 'Išlaidos' }})
+                        @if ($category->trashed())
+                            (KATEGORIJA LAIKINAI IŠTRINTA)
+                        @endif
                     </option>
                 @endforeach
+
+                @php
+                    $categoryExists = $categories->pluck('id')->contains($transaction->category_id);
+                @endphp
+
+                @if (!$categoryExists && $transaction->category)
+                    <option value="{{ $transaction->category->id }}" selected>
+                        {{ $transaction->category->name }} 
+                        ({{ $transaction->category->type === 'income' ? 'Pajamos' : 'Išlaidos' }})
+                        (KATEGORIJA LAIKINAI IŠTRINTA)
+                    </option>
+                @endif
             </select>
             @error('category_id')
                 <p class="text-red-500 text-sm mt-1">{{ $message }}</p>

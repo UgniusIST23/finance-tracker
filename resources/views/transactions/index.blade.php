@@ -20,6 +20,8 @@
             <label class="block text-sm mb-1" for="category_id">Kategorija</label>
             <select name="category_id" id="category_id" class="px-3 py-1 rounded border dark:bg-gray-700 dark:text-white">
                 <option value="">– Visos –</option>
+                {{-- Nauja eilutė: Pridedama parinktis filtruoti pagal visiškai ištrintas kategorijas --}}
+                <option value="-1" {{ request('category_id') == -1 ? 'selected' : '' }}>– Ištrintos kategorijos –</option>
                 @foreach ($categories as $category)
                     <option value="{{ $category->id }}" {{ request('category_id') == $category->id ? 'selected' : '' }}>
                         {{ $category->name }} ({{ $category->type === 'income' ? 'Pajamos' : 'Išlaidos' }})
@@ -103,7 +105,7 @@
         <p class="text-gray-400 mt-4">Transakcijų dar nėra.</p>
     @endforelse
 
-    {{-- Įrašų kiekio pasirinkimas + paginacija --}}
+    {{-- Įrašų kiekio pasirinkimas --}}
     <div class="mt-6 flex flex-col md:flex-row md:justify-between md:items-center gap-4">
         <form method="GET" class="flex items-center gap-2">
             <input type="hidden" name="date_from" value="{{ request('date_from') }}">

@@ -25,23 +25,33 @@ class TransactionController extends Controller
         }
 
         if ($request->filled('category_id')) {
-            $baseQuery->where('category_id', $request->category_id);
+            if ($request->category_id == -1) {
+
+                $baseQuery->where(function($query) {
+                    $query->whereNull('category_id')
+                          ->orWhereDoesntHave('category', function($q) {
+                              $q->withTrashed(); 
+                          });
+                });
+            } else {
+                $baseQuery->where('category_id', $request->category_id);
+            }
         }
 
         $transactions = (clone $baseQuery)->latest('date')->paginate($perPage);
-        $allFiltered = (clone $baseQuery)->get();
 
-        // Skaičiuojame tik tas transakcijas, kurios turi kategoriją
-        $income = $allFiltered->filter(fn($t) => $t->category && $t->category->type === 'income')->sum('amount');
-        $expense = $allFiltered->filter(fn($t) => $t->category && $t->category->type === 'expense')->sum('amount');
+        $income = (clone $baseQuery)
+            ->whereHas('category', fn($q) => $q->where('type', 'income')->withTrashed())
+            ->sum('amount');
+
+        $expense = (clone $baseQuery)
+            ->whereHas('category', fn($q) => $q->where('type', 'expense')->withTrashed())
+            ->sum('amount');
+
         $balance = $income - $expense;
 
-        // Rodyti tik tas kategorijas, kurios turi bent vieną aktyvią transakciją
-        $categories = Category::withTrashed()
-            ->where('user_id', Auth::id())
-            ->whereHas('transactions', function ($query) {
-                $query->whereNull('deleted_at');
-            })
+        $categories = Category::where('user_id', Auth::id())
+            ->withTrashed()
             ->get();
 
         return view('transactions.index', compact(
@@ -84,12 +94,8 @@ class TransactionController extends Controller
 
     public function edit(Transaction $transaction)
     {
-        if ($transaction->user_id !== Auth::id()) {
-            abort(403);
-        }
-
-        $categories = Category::withTrashed()
-            ->where('user_id', Auth::id())
+        $categories = Category::where('user_id', Auth::id())
+            ->withTrashed()
             ->get();
 
         return view('transactions.edit', compact('transaction', 'categories'));
@@ -97,10 +103,6 @@ class TransactionController extends Controller
 
     public function update(Request $request, Transaction $transaction)
     {
-        if ($transaction->user_id !== Auth::id()) {
-            abort(403);
-        }
-
         $request->validate([
             'category_id' => 'required|exists:categories,id',
             'amount' => 'required|numeric|min:0.01',
@@ -122,12 +124,7 @@ class TransactionController extends Controller
 
     public function destroy(Transaction $transaction)
     {
-        if ($transaction->user_id !== Auth::id()) {
-            abort(403);
-        }
-
         $transaction->delete();
-
         return redirect()->route('transactions.index')->with('success', 'Transakcija ištrinta.');
     }
 }

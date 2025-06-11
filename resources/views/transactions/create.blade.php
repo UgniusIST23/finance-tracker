@@ -13,7 +13,11 @@
                 <option value="">-- Pasirinkti --</option>
                 @foreach ($categories as $category)
                     <option value="{{ $category->id }}" {{ old('category_id') == $category->id ? 'selected' : '' }}>
-                        {{ $category->name }} ({{ $category->type === 'income' ? 'Pajamos' : 'Išlaidos' }})
+                        {{ $category->name }}
+                        ({{ $category->type === 'income' ? 'Pajamos' : 'Išlaidos' }})
+                        @if ($category->trashed())
+                            (KATEGORIJA LAIKINAI IŠTRINTA)
+                        @endif
                     </option>
                 @endforeach
             </select>
