@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 
 class CategoryController extends Controller
 {
@@ -17,10 +18,22 @@ class CategoryController extends Controller
             $query->where('type', $request->type);
         }
 
-        $perPage = $request->get('per_page', 10);
-        $categories = $query->latest()->paginate($perPage)->withQueryString();
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where('name', 'like', '%' . $search . '%');
+        }
 
-        return view('categories.index', compact('categories'));
+        $perPage = $request->get('per_page', 10);
+
+        if ($perPage === 'all') { 
+            $categories = $query->latest()->get();
+            $perPage = $categories->count();
+        } else {
+            $perPage = (int)$perPage;
+            $categories = $query->latest()->paginate($perPage)->withQueryString();
+        }
+        
+        return view('categories.index', compact('categories', 'perPage'));
     }
 
     public function create()
@@ -31,7 +44,15 @@ class CategoryController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'name' => 'required|string|max:100',
+            'name' => [
+                'required',
+                'string',
+                'max:100',
+                Rule::unique('categories')->where(function ($query) use ($request) {
+                    return $query->where('user_id', Auth::id())
+                                 ->where('type', $request->type);
+                })
+            ],
             'type' => 'required|in:income,expense',
         ]);
 
@@ -60,7 +81,15 @@ class CategoryController extends Controller
         }
 
         $request->validate([
-            'name' => 'required|string|max:100',
+            'name' => [
+                'required',
+                'string',
+                'max:100',
+                Rule::unique('categories')->ignore($category->id)->where(function ($query) use ($request) {
+                    return $query->where('user_id', Auth::id())
+                                 ->where('type', $request->type);
+                })
+            ],
             'type' => 'required|in:income,expense',
         ]);
 
@@ -81,7 +110,7 @@ class CategoryController extends Controller
         $deleteTransactions = $request->has('delete_transactions');
 
         if ($deleteTransactions) {
-            $category->transactions()->delete(); // Soft delete
+            $category->transactions()->delete();
         }
 
         $category->delete();
@@ -99,11 +128,18 @@ class CategoryController extends Controller
         if ($request->has('type') && in_array($request->type, ['income', 'expense'])) {
             $query->where('type', $request->type);
         }
-
+        
         $perPage = $request->get('per_page', 10);
-        $categories = $query->latest('deleted_at')->paginate($perPage)->withQueryString();
 
-        return view('categories.trashed', compact('categories'));
+        if ($perPage === 'all') {
+            $categories = $query->latest('deleted_at')->get();
+            $perPage = $categories->count();
+        } else {
+            $perPage = (int)$perPage;
+            $categories = $query->latest('deleted_at')->paginate($perPage)->withQueryString();
+        }
+
+        return view('categories.trashed', compact('categories', 'perPage'));
     }
 
     public function restore($id)
@@ -122,50 +158,31 @@ class CategoryController extends Controller
         return redirect()->route('categories.trashed')->with('success', 'Kategorija ir jos transakcijos atkurti.');
     }
 
-public function forceDelete(Request $request, $id)
-{
-    $category = Category::onlyTrashed()
-        ->where('user_id', Auth::id())
-        ->findOrFail($id);
-
-    $deleteTransactions = $request->has('delete_transactions');
-
-    if ($deleteTransactions) {
-        // Ištriname transakcijas visam laikui
-        Transaction::withTrashed()
-            ->where('user_id', Auth::id())
-            ->where('category_id', $category->id)
-            ->forceDelete();
-    } else {
-        // Paliekame transakcijas, bet atskiriame jas nuo ištrintos kategorijos
-        Transaction::withTrashed()
-            ->where('user_id', Auth::id())
-            ->where('category_id', $category->id)
-            ->update(['category_id' => null]);
-    }
-
-    $category->forceDelete();
-
-    return redirect()->route('categories.trashed')->with(
-        'success',
-        'Kategorija ištrinta visam laikui' . ($deleteTransactions ? ' kartu su transakcijomis.' : '.')
-    );
-}
-
-
-    public function forceDeleteWithTransactions(Request $request, $id)
+    public function forceDelete(Request $request, $id)
     {
         $category = Category::onlyTrashed()
             ->where('user_id', Auth::id())
             ->findOrFail($id);
 
-        Transaction::withTrashed()
-            ->where('user_id', Auth::id())
-            ->where('category_id', $category->id)
-            ->forceDelete();
+        $deleteTransactions = $request->has('delete_transactions');
+
+        if ($deleteTransactions) {
+            Transaction::withTrashed()
+                ->where('user_id', Auth::id())
+                ->where('category_id', $category->id)
+                ->forceDelete();
+        } else {
+            Transaction::withTrashed()
+                ->where('user_id', Auth::id())
+                ->where('category_id', $category->id)
+                ->update(['category_id' => null]);
+        }
 
         $category->forceDelete();
 
-        return redirect()->route('categories.trashed')->with('success', 'Kategorija ir jos transakcijos ištrintos visam laikui.');
+        return redirect()->route('categories.trashed')->with(
+            'success',
+            'Kategorija ištrinta visam laikui' . ($deleteTransactions ? ' kartu su transakcijomis.' : '.')
+        );
     }
 }

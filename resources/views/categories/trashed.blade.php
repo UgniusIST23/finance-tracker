@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="max-w-3xl mx-auto bg-gray-800 p-6 rounded shadow text-white">
+<div class="max-w-3xl mx-auto bg-white dark:bg-gray-800 p-6 rounded shadow text-gray-900 dark:text-white">
     <div class="flex justify-between items-center mb-4">
         <h2 class="text-xl font-semibold">Ištrintos kategorijos</h2>
         <a href="{{ route('categories.index') }}"
@@ -10,12 +10,11 @@
         </a>
     </div>
 
-    {{-- Filtravimo forma --}}
-    <form method="GET" action="{{ route('categories.trashed') }}" class="mb-6 flex flex-wrap gap-4 items-end text-white">
+    <form method="GET" action="{{ route('categories.trashed') }}" class="mb-6 flex flex-wrap gap-4 items-end text-gray-900 dark:text-white">
         <div>
             <label for="type" class="block text-sm mb-1">Tipas</label>
             <select name="type" id="type" onchange="this.form.submit()"
-                    class="w-36 px-3 py-2 rounded border dark:bg-gray-700 dark:text-white">
+                    class="w-36 px-3 py-2 rounded border border-gray-300 bg-white text-gray-900 dark:bg-gray-700 dark:text-white dark:border-gray-700">
                 <option value="">– Visi –</option>
                 <option value="income" {{ request('type') == 'income' ? 'selected' : '' }}>Pajamos</option>
                 <option value="expense" {{ request('type') == 'expense' ? 'selected' : '' }}>Išlaidos</option>
@@ -24,7 +23,7 @@
         <div>
             <label for="per_page" class="block text-sm mb-1">Įrašų kiekis</label>
             <select name="per_page" id="per_page" onchange="this.form.submit()"
-                    class="w-24 px-3 py-2 rounded border dark:bg-gray-700 dark:text-white">
+                    class="w-24 px-3 py-2 rounded border border-gray-300 bg-white text-gray-900 dark:bg-gray-700 dark:text-white dark:border-gray-700">
                 @foreach ([10, 15, 20, $categories->total()] as $option)
                     <option value="{{ $option }}" {{ request('per_page', 10) == $option ? 'selected' : '' }}>
                         {{ $option === $categories->total() ? 'Visi' : $option }}
@@ -40,9 +39,8 @@
         </div>
     @endif
 
-    {{-- Kategorijų sąrašas --}}
     @forelse ($categories as $category)
-        <div class="flex justify-between items-center bg-gray-700 px-4 py-2 rounded mb-2">
+        <div class="flex justify-between items-center bg-white dark:bg-gray-700 px-4 py-2 rounded shadow mb-2 text-gray-900 dark:text-white">
             <div>
                 <strong>{{ $category->name }}</strong>
                 ({{ $category->type === 'income' ? 'Pajamos' : 'Išlaidos' }})
@@ -64,7 +62,7 @@
             </div>
         </div>
     @empty
-        <p class="text-gray-400 mt-4">Ištrintų kategorijų nėra.</p>
+        <p class="text-gray-600 dark:text-gray-400 mt-4">Ištrintų kategorijų nėra.</p>
     @endforelse
 
     <div class="mt-6">
@@ -72,9 +70,8 @@
     </div>
 </div>
 
-{{-- Modal langas --}}
 <div id="deleteModal" class="fixed inset-0 bg-black bg-opacity-60 hidden flex items-center justify-center z-50">
-    <div class="bg-white text-black rounded-lg max-w-lg w-full p-6">
+    <div class="bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg max-w-lg w-full p-6 shadow-lg">
         <h2 class="text-xl font-semibold mb-4">Ar tikrai norite ištrinti kategoriją?</h2>
         <p id="modalCategoryName" class="mb-2 font-medium"></p>
         <form method="POST" action="" id="deleteForm" onsubmit="handleDeleteSubmit(event)">
@@ -82,10 +79,10 @@
             @method('DELETE')
             <input type="hidden" name="category_id" id="modalCategoryId">
             <label class="flex items-center gap-2 mb-4">
-                <input type="checkbox" name="delete_transactions" id="deleteTransactions" class="form-checkbox">
+                <input type="checkbox" name="delete_transactions" id="deleteTransactions" class="rounded border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-indigo-600 shadow-sm focus:ring-indigo-500 dark:focus:ring-indigo-600 dark:focus:ring-offset-gray-800">
                 Taip, noriu ištrinti ir su šia kategorija susijusias transakcijas
             </label>
-            <div id="modalTransactions" class="max-h-48 overflow-y-auto bg-gray-100 text-sm p-3 rounded mb-4">
+            <div id="modalTransactions" class="max-h-48 overflow-y-auto bg-gray-100 dark:bg-gray-700 text-sm p-3 rounded mb-4 text-gray-800 dark:text-gray-300">
                 Transakcijų sąrašas kraunamas...
             </div>
             <div class="flex justify-end gap-2">

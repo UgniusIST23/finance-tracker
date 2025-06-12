@@ -1,26 +1,25 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="max-w-5xl mx-auto bg-gray-800 p-6 rounded shadow text-white">
+<div class="max-w-5xl mx-auto bg-white dark:bg-gray-800 p-6 rounded shadow text-gray-900 dark:text-white">
     <h2 class="text-xl font-semibold mb-4">Transakcijų sąrašas</h2>
 
-    {{-- Filtravimo forma --}}
-    <form method="GET" action="{{ route('transactions.index') }}" class="mb-6 flex flex-wrap gap-4 items-end text-white">
+    <form method="GET" action="{{ route('transactions.index') }}" class="mb-6 flex flex-wrap gap-4 items-end text-gray-900 dark:text-white">
         <div>
             <label class="block text-sm mb-1" for="date_from">Nuo</label>
             <input type="date" name="date_from" id="date_from" value="{{ request('date_from') }}"
-                   class="px-3 py-1 rounded border dark:bg-gray-700 dark:text-white">
+                   class="px-3 py-1 rounded border border-gray-300 bg-white text-gray-900 dark:bg-gray-700 dark:text-white dark:border-gray-700">
         </div>
         <div>
             <label class="block text-sm mb-1" for="date_to">Iki</label>
             <input type="date" name="date_to" id="date_to" value="{{ request('date_to') }}"
-                   class="px-3 py-1 rounded border dark:bg-gray-700 dark:text-white">
+                   class="px-3 py-1 rounded border border-gray-300 bg-white text-gray-900 dark:bg-gray-700 dark:text-white dark:border-gray-700">
         </div>
         <div>
             <label class="block text-sm mb-1" for="category_id">Kategorija</label>
-            <select name="category_id" id="category_id" class="px-3 py-1 rounded border dark:bg-gray-700 dark:text-white">
+            <select name="category_id" id="category_id"
+                    class="px-3 py-1 rounded border border-gray-300 bg-white text-gray-900 dark:bg-gray-700 dark:text-white dark:border-gray-700">
                 <option value="">– Visos –</option>
-                {{-- Nauja eilutė: Pridedama parinktis filtruoti pagal visiškai ištrintas kategorijas --}}
                 <option value="-1" {{ request('category_id') == -1 ? 'selected' : '' }}>– Ištrintos kategorijos –</option>
                 @foreach ($categories as $category)
                     <option value="{{ $category->id }}" {{ request('category_id') == $category->id ? 'selected' : '' }}>
@@ -34,12 +33,11 @@
             <label class="block text-sm mb-1" for="per_page">Įrašų kiekis</label>
             <select name="per_page" id="per_page"
                     onchange="this.form.submit()"
-                    class="px-3 py-1 w-24 rounded border dark:bg-gray-700 dark:text-white">
-                @foreach ([10, 15, 20, $transactions->total()] as $option)
-                    <option value="{{ $option }}" {{ request('per_page', 10) == $option ? 'selected' : '' }}>
-                        {{ $option === $transactions->total() ? 'Visi' : $option }}
-                    </option>
-                @endforeach
+                    class="px-3 py-1 w-24 rounded border border-gray-300 bg-white text-gray-900 dark:bg-gray-700 dark:text-white dark:border-gray-700">
+                <option value="10" {{ $selectedPerPage == 10 ? 'selected' : '' }}>10</option>
+                <option value="15" {{ $selectedPerPage == 15 ? 'selected' : '' }}>15</option>
+                <option value="20" {{ $selectedPerPage == 20 ? 'selected' : '' }}>20</option>
+                <option value="all" {{ $selectedPerPage == 'all' ? 'selected' : '' }}>Visi</option>
             </select>
         </div>
         <div class="flex gap-2">
@@ -48,15 +46,14 @@
         </div>
     </form>
 
-    {{-- Santrauka --}}
     <div class="mb-4">
         <p class="text-lg">
             <span class="font-semibold">Balansas:</span>
-            <span class="{{ $balance < 0 ? 'text-red-500' : 'text-green-400' }}">
+            <span class="{{ $balance < 0 ? 'text-red-600 dark:text-red-500' : 'text-green-600 dark:text-green-400' }}">
                 {{ number_format($balance, 2) }} EUR
             </span>
         </p>
-        <p class="text-sm text-gray-400">
+        <p class="text-sm text-gray-600 dark:text-gray-400">
             Pajamos: +{{ number_format($income, 2) }} EUR | Išlaidos: -{{ number_format($expense, 2) }} EUR
         </p>
     </div>
@@ -67,26 +64,26 @@
         </div>
     @endif
 
-    <a href="{{ route('transactions.create') }}" class="text-purple-400 hover:text-purple-600 mb-4 inline-block">
+    <a href="{{ route('transactions.create') }}" class="text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-500 mb-4 inline-block">
         Nauja transakcija
     </a>
 
     @forelse ($transactions as $transaction)
-        <div class="flex justify-between items-center bg-gray-700 px-4 py-2 rounded mb-2">
+        <div class="flex justify-between items-center bg-white dark:bg-gray-700 px-4 py-2 rounded shadow mb-2 text-gray-900 dark:text-white">
             <div>
                 <strong>
                     @if ($transaction->category)
                         {{ $transaction->category->name }}
                         @if ($transaction->category->trashed())
-                            <span class="text-yellow-400">(KATEGORIJA LAIKINAI IŠTRINTA)</span>
+                            <span class="text-yellow-600 dark:text-yellow-400">(LAIKINAI IŠTRINTA)</span>
                         @endif
                         ({{ $transaction->category->type === 'income' ? 'Pajamos' : 'Išlaidos' }})
                     @else
-                        <span class="text-red-400">KATEGORIJA IŠTRINTA</span>
+                        <span class="text-red-600 dark:text-red-400">KATEGORIJA IŠTRINTA</span>
                     @endif
                 </strong>
                 <br>
-                <span class="text-sm text-gray-300">
+                <span class="text-sm text-gray-600 dark:text-gray-300">
                     {{ number_format($transaction->amount, 2) }} {{ strtoupper($transaction->currency) }} – {{ $transaction->date }}
                     @if ($transaction->description)<br>{{ $transaction->description }}@endif
                 </span>
@@ -102,29 +99,30 @@
             </div>
         </div>
     @empty
-        <p class="text-gray-400 mt-4">Transakcijų dar nėra.</p>
+        <p class="text-gray-600 dark:text-gray-400 mt-4">Transakcijų dar nėra.</p>
     @endforelse
 
-    {{-- Įrašų kiekio pasirinkimas --}}
     <div class="mt-6 flex flex-col md:flex-row md:justify-between md:items-center gap-4">
         <form method="GET" class="flex items-center gap-2">
             <input type="hidden" name="date_from" value="{{ request('date_from') }}">
             <input type="hidden" name="date_to" value="{{ request('date_to') }}">
             <input type="hidden" name="category_id" value="{{ request('category_id') }}">
 
-            <label for="per_page" class="text-sm">Įrašų kiekis:</label>
+            <label for="per_page" class="text-sm text-gray-900 dark:text-white">Įrašų kiekis:</label>
             <select name="per_page" id="per_page" onchange="this.form.submit()"
-                    class="px-3 py-2 rounded border dark:bg-gray-700 dark:text-white text-sm w-24">
-                <option value="10" {{ request('per_page', 10) == 10 ? 'selected' : '' }}>10</option>
-                <option value="15" {{ request('per_page') == 15 ? 'selected' : '' }}>15</option>
-                <option value="20" {{ request('per_page') == 20 ? 'selected' : '' }}>20</option>
-                <option value="{{ $transactions->total() }}" {{ request('per_page') == $transactions->total() ? 'selected' : '' }}>Visi</option>
+                    class="px-3 py-2 rounded border border-gray-300 bg-white text-gray-900 dark:bg-gray-700 dark:text-white dark:border-gray-700 text-sm w-24">
+                <option value="10" {{ $selectedPerPage == 10 ? 'selected' : '' }}>10</option>
+                <option value="15" {{ $selectedPerPage == 15 ? 'selected' : '' }}>15</option>
+                <option value="20" {{ $selectedPerPage == 20 ? 'selected' : '' }}>20</option>
+                <option value="all" {{ $selectedPerPage == 'all' ? 'selected' : '' }}>Visi</option>
             </select>
         </form>
 
-        <div>
-            {{ $transactions->withQueryString()->links() }}
-        </div>
+        @if ($transactions instanceof \Illuminate\Pagination\LengthAwarePaginator)
+            <div>
+                {{ $transactions->withQueryString()->links() }}
+            </div>
+        @endif
     </div>
 </div>
 @endsection

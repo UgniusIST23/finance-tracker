@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\Transaction;
 use App\Models\Category;
 use Illuminate\Support\Str;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class ReportController extends Controller
 {
@@ -43,18 +44,25 @@ class ReportController extends Controller
 
         $avgTotal = $transactions->avg('amount');
 
+        $latestTransaction = (clone $query)->orderBy('date', 'desc')->first();
+
         $byCategory = $transactions
             ->groupBy(function ($t) {
                 return $t->category->name ?? 'KATEGORIJA IŠTRINTA';
             })
             ->map(function ($group) {
                 $first = $group->first();
+                $minDate = $group->min('date');
+                $maxDate = $group->max('date');
                 return [
                     'type' => $first->category->type ?? 'unknown',
                     'sum' => $group->sum('amount'),
                     'trashed' => $first->category
                         ? ($first->category->trashed() ? 'soft' : null)
                         : 'hard',
+                    'min_date' => $minDate,
+                    'max_date' => $maxDate,
+                    'count' => $group->count(),
                 ];
             });
 
@@ -86,27 +94,44 @@ class ReportController extends Controller
                     'trashed' => $t->category->trashed() ? 'soft' : null,
                 ];
             })
-            ->groupBy('name') 
+            ->groupBy('name')
             ->map(function ($group) {
-                $first = $group->first(); 
+                $first = $group->first();
                 return [
                     'type' => $first['type'],
-                    'sum' => $group->sum('sum'), 
+                    'sum' => $group->sum('sum'),
                     'trashed' => $first['trashed'],
                 ];
             });
 
+        $perPageReport = $request->input('per_page', 10);
+
+        if ($perPageReport === 'all') {
+            $paginatedByCategory = $byCategory;
+        } else {
+            $perPageReport = (int)$perPageReport;
+            $currentPage = LengthAwarePaginator::resolveCurrentPage();
+            $itemCollection = collect($byCategory->values());
+            $pagedItems = $itemCollection->slice(($currentPage * $perPageReport) - $perPageReport, $perPageReport)->all();
+            $paginatedByCategory = new LengthAwarePaginator($pagedItems, $itemCollection->count(), $perPageReport, $currentPage);
+            $paginatedByCategory->withPath(request()->url())->withQueryString();
+        }
+
         return view('reports.index', compact(
+            'paginatedByCategory',
             'byCategory',
-            'minTransaction', 
-            'maxTransaction', 
-            'avgTotal',      
+            'minTransaction',
+            'maxTransaction',
+            'avgTotal',
             'incomeTotal',
             'expenseTotal',
             'balance',
             'incomeData',
             'expenseData',
-            'combinedData'
+            'combinedData',
+            'perPageReport',
+            'latestTransaction'
         ));
     }
 }
+

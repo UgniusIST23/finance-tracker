@@ -1,32 +1,31 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="max-w-6xl mx-auto bg-gray-800 p-6 rounded shadow text-white">
+<div class="max-w-6xl mx-auto bg-white dark:bg-gray-800 p-6 rounded shadow text-gray-900 dark:text-white">
     <h2 class="text-2xl font-bold mb-6 flex items-center gap-2">
         Finansinė ataskaita
     </h2>
 
-    <form method="GET" action="{{ route('reports.index') }}" class="mb-6 flex flex-wrap gap-4 items-end text-white">
+    <form method="GET" action="{{ route('reports.index') }}" class="mb-6 flex flex-wrap gap-4 items-end text-gray-900 dark:text-white">
         <div>
             <label class="block text-sm mb-1" for="date_from">Nuo</label>
             <input type="date" name="date_from" id="date_from" value="{{ request('date_from') }}"
-                   class="px-3 py-1 rounded border dark:bg-gray-700 dark:text-white">
+                   class="px-3 py-1 rounded border border-gray-300 bg-white text-gray-900 dark:bg-gray-700 dark:text-white dark:border-gray-700">
         </div>
         <div>
             <label class="block text-sm mb-1" for="date_to">Iki</label>
             <input type="date" name="date_to" id="date_to" value="{{ request('date_to') }}"
-                   class="px-3 py-1 rounded border dark:bg-gray-700 dark:text-white">
+                   class="px-3 py-1 rounded border border-gray-300 bg-white text-gray-900 dark:bg-gray-700 dark:text-white dark:border-gray-700">
         </div>
         <div>
             <label class="block text-sm mb-1" for="per_page">Įrašų kiekis</label>
             <select name="per_page" id="per_page"
                     onchange="this.form.submit()"
-                    class="px-3 py-1 w-24 rounded border dark:bg-gray-700 dark:text-white">
-                @foreach ([10, 15, 20, $byCategory->count()] as $option)
-                    <option value="{{ $option }}" {{ request('per_page', 10) == $option ? 'selected' : '' }}>
-                        {{ $option === $byCategory->count() ? 'Visi' : $option }}
-                    </option>
-                @endforeach
+                    class="px-3 py-1 w-24 rounded border border-gray-300 bg-white text-gray-900 dark:bg-gray-700 dark:text-white dark:border-gray-700">
+                <option value="10" {{ $perPageReport == 10 ? 'selected' : '' }}>10</option>
+                <option value="15" {{ $perPageReport == 15 ? 'selected' : '' }}>15</option>
+                <option value="20" {{ $perPageReport == 20 ? 'selected' : '' }}>20</option>
+                <option value="all" {{ $perPageReport == 'all' ? 'selected' : '' }}>Visi</option>
             </select>
         </div>
         <div class="flex gap-2 mt-5">
@@ -42,17 +41,17 @@
     <div class="mb-6">
         <h3 class="text-lg font-semibold mb-2">Bendri duomenys</h3>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div class="bg-gray-700 p-4 rounded">
-                <p class="text-sm text-gray-400">Pajamos</p>
-                <p class="text-green-400 text-lg font-bold">+{{ number_format($incomeTotal, 2) }} EUR</p>
+            <div class="bg-white dark:bg-gray-700 p-4 rounded shadow">
+                <p class="text-sm text-gray-600 dark:text-gray-400">Pajamos</p>
+                <p class="text-green-600 dark:text-green-400 text-lg font-bold">+{{ number_format($incomeTotal, 2) }} EUR</p>
             </div>
-            <div class="bg-gray-700 p-4 rounded">
-                <p class="text-sm text-gray-400">Išlaidos</p>
-                <p class="text-red-400 text-lg font-bold">-{{ number_format($expenseTotal, 2) }} EUR</p>
+            <div class="bg-white dark:bg-gray-700 p-4 rounded shadow">
+                <p class="text-sm text-gray-600 dark:text-gray-400">Išlaidos</p>
+                <p class="text-red-600 dark:text-red-400 text-lg font-bold">-{{ number_format($expenseTotal, 2) }} EUR</p>
             </div>
-            <div class="bg-gray-700 p-4 rounded">
-                <p class="text-sm text-gray-400">Viso</p>
-                <p class="text-lg font-bold {{ $balance >= 0 ? 'text-green-300' : 'text-red-300' }}">
+            <div class="bg-white dark:bg-gray-700 p-4 rounded shadow">
+                <p class="text-sm text-gray-600 dark:text-gray-400">Viso</p>
+                <p class="text-lg font-bold {{ $balance >= 0 ? 'text-green-600 dark:text-green-300' : 'text-red-600 dark:text-red-300' }}">
                     {{ number_format($balance, 2) }} EUR
                 </p>
             </div>
@@ -61,25 +60,23 @@
 
     <h3 class="text-lg font-semibold mb-2">Išlaidos/pajamos pagal kategorijas</h3>
     <div class="space-y-2 mb-6">
-        @php $paginated = $byCategory->slice(0, request('per_page', 10)) @endphp
-        @forelse ($paginated as $category => $data)
+        @forelse ($byCategory as $category => $data)
             @php
                 $trashedLabel = '';
-                $categoryLabel = $category;
                 $categoryClass = '';
 
                 if ($category === 'KATEGORIJA IŠTRINTA') {
-                    $categoryClass = 'text-red-400';
+                    $categoryClass = 'text-red-600 dark:text-red-400';
                 } else {
                     if (isset($data['trashed']) && $data['trashed'] === 'soft') {
-                        $trashedLabel = ' <span class="text-yellow-400">(LAIKINAI IŠTRINTA)</span>';
+                        $trashedLabel = ' <span class="text-yellow-600 dark:text-yellow-400">(LAIKINAI IŠTRINTA)</span>';
                     } elseif (isset($data['trashed']) && $data['trashed'] === 'hard') {
-                        $trashedLabel = ' <span class="text-red-400">(IŠTRINTA)</span>';
+                        $trashedLabel = ' <span class="text-red-600 dark:text-red-400">(IŠTRINTA)</span>';
                     }
                 }
             @endphp
 
-            <div class="bg-gray-700 px-4 py-2 rounded flex justify-between">
+            <div class="bg-white dark:bg-gray-700 px-4 py-2 rounded shadow flex justify-between text-gray-900 dark:text-white">
                 <span class="{{ $categoryClass }}">
                     <span>{!! $category !!}{!! $trashedLabel !!} (
                     @if ($data['type'] === 'income')
@@ -90,22 +87,25 @@
                         Nežinoma
                     @endif
                     )</span>
+                    <span class="text-gray-500 dark:text-gray-400 text-xs">
+                        ({{ $data['count'] }} transakcijų)
+                    </span>
                 </span>
-                <span class="{{ $data['type'] === 'income' ? 'text-green-400' : 'text-red-400' }}">
+                <span class="{{ $data['type'] === 'income' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400' }}">
                     {{ number_format($data['sum'], 2) }} EUR
                 </span>
             </div>
         @empty
-            <p class="text-gray-400">Nėra duomenų šiam laikotarpiui.</p>
+            <p class="text-gray-600 dark:text-gray-400">Nėra duomenų šiam laikotarpiui.</p>
         @endforelse
     </div>
 
     <h3 class="text-lg font-semibold mb-2">Analizė</h3>
-    <ul class="list-disc list-inside text-gray-200 space-y-2 mb-6">
+    <ul class="list-disc list-inside text-gray-700 dark:text-gray-200 space-y-2 mb-6">
         <li>
             Mažiausia transakcija:
             @if ($minTransaction)
-                <span class="text-blue-400">
+                <span class="text-blue-600 dark:text-blue-400">
                     {{ number_format($minTransaction->amount, 2) }} EUR
                     ({{ $minTransaction->date }})
                     @if ($minTransaction->description)
@@ -114,20 +114,20 @@
                     @if ($minTransaction->category)
                         (Kategorija: {{ $minTransaction->category->name }}
                         @if ($minTransaction->category->trashed())
-                            <span class="text-yellow-400">(LAIKINAI IŠTRINTA)</span>
+                            <span class="text-yellow-600 dark:text-yellow-400">(LAIKINAI IŠTRINTA)</span>
                         @endif)
                     @else
-                        (<span class="text-red-400">Kategorija ištrinta</span>)
+                        (<span class="text-red-600 dark:text-red-400">Kategorija ištrinta</span>)
                     @endif
                 </span>
             @else
-                <span class="text-gray-400">Nėra</span>
+                <span class="text-gray-600 dark:text-gray-400">Nėra</span>
             @endif
         </li>
         <li>
             Didžiausia transakcija:
             @if ($maxTransaction)
-                <span class="text-blue-400">
+                <span class="text-blue-600 dark:text-blue-400">
                     {{ number_format($maxTransaction->amount, 2) }} EUR
                     ({{ $maxTransaction->date }})
                     @if ($maxTransaction->description)
@@ -136,32 +136,56 @@
                     @if ($maxTransaction->category)
                         (Kategorija: {{ $maxTransaction->category->name }}
                         @if ($maxTransaction->category->trashed())
-                            <span class="text-yellow-400">(LAIKINAI IŠTRINTA)</span>
+                            <span class="text-yellow-600 dark:text-yellow-400">(LAIKINAI IŠTRINTA)</span>
                         @endif)
                     @else
-                        (<span class="text-red-400">Kategorija ištrinta</span>)
+                        (<span class="text-red-600 dark:text-red-400">Kategorija ištrinta</span>)
                     @endif
                 </span>
             @else
-                <span class="text-gray-400">Nėra</span>
+                <span class="text-gray-600 dark:text-gray-400">Nėra</span>
             @endif
         </li>
-        <li>Vidutinis transakcijos dydis: <span class="text-blue-400">{{ number_format($avgTotal ?? 0, 2) }} EUR</span></li>
+        <li>
+            Naujausia transakcija:
+            @if ($latestTransaction)
+                <span class="text-blue-600 dark:text-blue-400">
+                    {{ number_format($latestTransaction->amount, 2) }} EUR
+                    ({{ $latestTransaction->date }})
+                    @if ($latestTransaction->description)
+                        - "{{ Str::limit($latestTransaction->description, 30) }}"
+                    @endif
+                    @if ($latestTransaction->category)
+                        (Kategorija: {{ $latestTransaction->category->name }}
+                        @if ($latestTransaction->category->trashed())
+                            <span class="text-yellow-600 dark:text-yellow-400">(LAIKINAI IŠTRINTA)</span>
+                        @endif)
+                    @else
+                        (<span class="text-red-600 dark:text-red-400">Kategorija ištrinta</span>)
+                    @endif
+                </span>
+            @else
+                <span class="text-gray-600 dark:text-gray-400">Nėra</span>
+            @endif
+        </li>
+        <li>Vidutinis transakcijos dydis: <span class="text-blue-600 dark:text-blue-400">{{ number_format($avgTotal ?? 0, 2) }} EUR</span></li>
     </ul>
 
     <h3 class="text-lg font-semibold mb-2">Grafikai pagal kategorijas</h3>
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 bg-white p-4 rounded text-black overflow-x-auto">
-        <div class="h-[700px] lg:h-[800px] min-w-[400px]">
-            <h4 class="text-sm font-semibold mb-2 text-center">Pajamų diagrama</h4>
-            <canvas id="incomeChart" style="width: 100%; height: 100%;"></canvas>
-        </div>
-        <div class="h-[700px] lg:h-[800px] min-w-[400px]">
-            <h4 class="text-sm font-semibold mb-2 text-center">Išlaidų diagrama</h4>
-            <canvas id="expenseChart" style="width: 100%; height: 100%;"></canvas>
-        </div>
-        <div class="h-[700px] lg:h-[800px] min-w-[400px]">
-            <h4 class="text-sm font-semibold mb-2 text-center">Bendra diagrama</h4>
-            <canvas id="combinedChart" style="width: 100%; height: 100%;"></canvas>
+    <div class="bg-gray-100 dark:bg-gray-700 p-4 rounded text-gray-900 dark:text-white">
+        <div class="flex flex-nowrap overflow-x-auto space-x-12 pb-4">
+            <div class="flex-shrink-0 h-[450px] w-[550px]">
+                <h4 class="text-sm font-semibold mb-2 text-center">Pajamų diagrama</h4>
+                <canvas id="incomeChart" style="width: 100%; height: 100%;"></canvas>
+            </div>
+            <div class="flex-shrink-0 h-[450px] w-[550px]">
+                <h4 class="text-sm font-semibold mb-2 text-center">Išlaidų diagrama</h4>
+                <canvas id="expenseChart" style="width: 100%; height: 100%;"></canvas>
+            </div>
+            <div class="flex-shrink-0 h-[450px] w-[550px]">
+                <h4 class="text-sm font-semibold mb-2 text-center">Bendra diagrama</h4>
+                <canvas id="combinedChart" style="width: 100%; height: 100%;"></canvas>
+            </div>
         </div>
     </div>
 </div>
@@ -228,10 +252,14 @@
                         if (label) {
                             label += ': ';
                         }
-                        if (context.parsed.y !== null) {
-                            label += new Intl.NumberFormat('lt-LT', { style: 'currency', currency: 'EUR' }).format(context.parsed.y);
-                        } else if (context.parsed !== null && typeof context.parsed === 'number') {
-                             label += new Intl.NumberFormat('lt-LT', { style: 'currency', currency: 'EUR' }).format(context.parsed);
+                        if (context.chart.config.type === 'bar') {
+                            if (context.parsed.y !== null) {
+                                label += new Intl.NumberFormat('lt-LT', { style: 'currency', currency: 'EUR' }).format(context.parsed.y);
+                            }
+                        } else {
+                            if (context.parsed !== null && typeof context.parsed === 'number') {
+                                label += new Intl.NumberFormat('lt-LT', { style: 'currency', currency: 'EUR' }).format(context.parsed);
+                            }
                         }
                         return label;
                     }
@@ -269,8 +297,8 @@
                 },
                 ticks: {
                     color: '#cbd5e1',
-                    maxRotation: 75,
-                    minRotation: 75,
+                    maxRotation: 45,
+                    minRotation: 45,
                     autoSkip: true,
                     maxTicksLimit: 20
                 },
@@ -352,12 +380,14 @@
                 ...baseChartOptions.plugins,
                 legend: {
                     display: true,
-                    position: 'right',
+                    position: 'bottom',
                     labels: {
                         color: '#cbd5e1',
                         font: {
-                            size: 11
-                        }
+                            size: 12
+                        },
+                        boxWidth: 20,
+                        padding: 15
                     }
                 }
             }
