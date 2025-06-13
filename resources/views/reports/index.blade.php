@@ -60,12 +60,14 @@
 
     <h3 class="text-lg font-semibold mb-2">Išlaidos/pajamos pagal kategorijas</h3>
     <div class="space-y-2 mb-6">
-        @forelse ($byCategory as $category => $data)
+        @forelse ($paginatedByCategory as $data) {{-- Naudojame tik $data, nes pavadinimas dabar yra $data['name'] --}}
             @php
                 $trashedLabel = '';
                 $categoryClass = '';
 
-                if ($category === 'KATEGORIJA IŠTRINTA') {
+                $displayCategoryName = $data['name'];
+
+                if ($displayCategoryName === 'KATEGORIJA IŠTRINTA') {
                     $categoryClass = 'text-red-600 dark:text-red-400';
                 } else {
                     if (isset($data['trashed']) && $data['trashed'] === 'soft') {
@@ -78,7 +80,7 @@
 
             <div class="bg-white dark:bg-gray-700 px-4 py-2 rounded shadow flex justify-between text-gray-900 dark:text-white">
                 <span class="{{ $categoryClass }}">
-                    <span>{!! $category !!}{!! $trashedLabel !!} (
+                    <span>{!! $displayCategoryName !!}{!! $trashedLabel !!} (
                     @if ($data['type'] === 'income')
                         Pajamos
                     @elseif ($data['type'] === 'expense')
@@ -98,6 +100,10 @@
         @empty
             <p class="text-gray-600 dark:text-gray-400">Nėra duomenų šiam laikotarpiui.</p>
         @endforelse
+    </div>
+
+    <div class="mt-6">
+        {{ $paginatedByCategory->withQueryString()->links() }}
     </div>
 
     <h3 class="text-lg font-semibold mb-2">Analizė</h3>

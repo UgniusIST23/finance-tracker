@@ -52,16 +52,13 @@ class ReportController extends Controller
             })
             ->map(function ($group) {
                 $first = $group->first();
-                $minDate = $group->min('date');
-                $maxDate = $group->max('date');
                 return [
+                    'name' => $first->category->name ?? 'KATEGORIJA IŠTRINTA',
                     'type' => $first->category->type ?? 'unknown',
                     'sum' => $group->sum('amount'),
                     'trashed' => $first->category
                         ? ($first->category->trashed() ? 'soft' : null)
                         : 'hard',
-                    'min_date' => $minDate,
-                    'max_date' => $maxDate,
                     'count' => $group->count(),
                 ];
             });
@@ -106,16 +103,30 @@ class ReportController extends Controller
 
         $perPageReport = $request->input('per_page', 10);
 
+        $itemsToPaginate = $byCategory->values()->all();
+
+        $totalItems = count($itemsToPaginate);
+        $currentPage = LengthAwarePaginator::resolveCurrentPage();
+
         if ($perPageReport === 'all') {
-            $paginatedByCategory = $byCategory;
+            $paginatedItems = $itemsToPaginate;
+            $perPageDisplay = $totalItems;
         } else {
             $perPageReport = (int)$perPageReport;
-            $currentPage = LengthAwarePaginator::resolveCurrentPage();
-            $itemCollection = collect($byCategory->values());
-            $pagedItems = $itemCollection->slice(($currentPage * $perPageReport) - $perPageReport, $perPageReport)->all();
-            $paginatedByCategory = new LengthAwarePaginator($pagedItems, $itemCollection->count(), $perPageReport, $currentPage);
-            $paginatedByCategory->withPath(request()->url())->withQueryString();
+            $offset = ($currentPage - 1) * $perPageReport;
+            $paginatedItems = array_slice($itemsToPaginate, $offset, $perPageReport);
+            $perPageDisplay = $perPageReport;
         }
+
+        $paginatedByCategory = new LengthAwarePaginator(
+            $paginatedItems,
+            $totalItems,
+            $perPageDisplay,
+            $currentPage,
+            ['path' => LengthAwarePaginator::resolveCurrentPath()]
+        );
+
+        $paginatedByCategory->withQueryString();
 
         return view('reports.index', compact(
             'paginatedByCategory',
@@ -134,4 +145,3 @@ class ReportController extends Controller
         ));
     }
 }
-
