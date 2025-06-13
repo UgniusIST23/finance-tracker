@@ -46,6 +46,9 @@ Projekto paleidimas (lokaliai su XAMPP):
 
    php artisan migrate
 
+8. Įrašyk bandomuosius duomenis (jei reikia):
+
+php artisan db:seed --class=DummyTransactionSeeder
 ---
 
 Front-end paruošimas:
