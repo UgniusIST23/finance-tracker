@@ -48,7 +48,8 @@ Projekto paleidimas (lokaliai su XAMPP):
 
 8. Įrašyk bandomuosius duomenis (jei reikia):
 
-php artisan db:seed --class=DummyTransactionSeeder
+   php artisan db:seed --class=DummyTransactionSeeder
+
 ---
 
 Front-end paruošimas:
